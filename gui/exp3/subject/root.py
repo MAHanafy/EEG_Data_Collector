@@ -39,7 +39,7 @@ class SubjectInterface(Toplevel):
         self.levels = []
 
         # set up levels
-        self.levels = ([1, 2, 3, 4] * self.subject.cues)[:self.subject.cues]
+        self.levels = ([1, 2] * self.subject.cues)[:self.subject.cues]
         if self.subject.run_type != "Demo":
             random.shuffle(self.levels)
 
