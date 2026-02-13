@@ -1,0 +1,16 @@
+=== EEG Experiment Log ===
+Subject Name: exp3
+Date: 2026-02-13
+Timestamp: 2026-02-13 07:35:34
+
+=== Session Parameters ===
+Subject ID: 1
+Run: 1
+Run Type: Training
+Number of Cues: 4
+Planning Time: 2s
+Task Time: 2s
+Rest Time: 2s
+
+=== Data File ===
+Data File: ./data/EXP3_SUBJECT1_Training_1.npz
