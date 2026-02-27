@@ -25,6 +25,7 @@ class OpenBCI:
         self.filter = None
         self.channels = []
         self.last_sample = np.zeros(16)
+        self._connecting = False
 
     def find_serial_port(self):
         openbci_port = ''
@@ -48,6 +49,11 @@ class OpenBCI:
         return openbci_port
 
     def open(self):
+        if self._connecting or self.board is not None:
+            return self
+
+        self._connecting = True
+
         def worker():
             while self.board is None:
                 try:
@@ -56,8 +62,6 @@ class OpenBCI:
                     params.serial_port = self.find_serial_port()
 
                     temp_board = BoardShim(BoardIds.CYTON_DAISY_BOARD.value, params)
-                    # temp_board = BoardShim(BoardIds.SYNTHETIC_BOARD.value, params)
-                    # temp_board.enable_dev_board_logger()
                     temp_board.prepare_session()
                     time.sleep(5)
                     temp_board.start_stream()
@@ -69,6 +73,8 @@ class OpenBCI:
 
                 time.sleep(0.5)
 
+            self._connecting = False
+
         threading.Thread(target=worker, daemon=True).start()
         return self
 
@@ -76,12 +82,17 @@ class OpenBCI:
         if self.board is not None:
             self.board.stop_stream()
             self.board.release_session()
+            self.board = None
         return self
 
     def get_data(self):
-        if self.board is not None:
+        if self.board is None:
+            self.open()
+            return self.last_sample
+
+        try:
             latest = self.board.get_current_board_data(1)
-            sample = np.squeeze(latest)[:len(self.channels)] * ((4500000)/24/(2**23-1))
+            sample = np.squeeze(latest)[:len(self.channels)] * ((4500000) / 24 / (2**23 - 1))
 
             if sample.shape != (16,):
                 sample = np.zeros(16)
@@ -90,6 +101,14 @@ class OpenBCI:
                 sample = self.filter.apply(sample, 'eeg')
 
             self.last_sample = sample
+        except Exception as error:
+            print(f"error while reading from OpenBCI board, attempting reconnect: {error}")
+            try:
+                self.close()
+            except Exception:
+                pass
+
+            self.open()
 
         return self.last_sample
 
